@@ -1,45 +1,33 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include <stdio.h>
 
-#include <differential.h>
+
 #include <pnm.h>
 #include <codage.h>
+#include <differential.h>
 #include <bits.h>
-//#include <dif.h>
 
-
-/*void encode_decode_test(){
-    for (int dif = -255; dif < 256; dif+=1){
-        printf("Original dif: %d, encoded: %d, decoded: %d\n",
-            dif,
-            encode_dif(dif),
-            decode_dif(encode_dif(dif)));
-    }
-}*/
-unsigned short magic_grayscale = 0xD1FF;
 unsigned char standart_bitlen[] = {2, 4, 5, 8};
+unsigned short magic_grayscale = 0xD1FF;
+
 extern int pnmtodif(const char* pnminput, const char* difoutput){
     PNMImage* pnm = read_pnm(pnminput);
     if (pnm == NULL){
         fprintf(stderr, "Opening %s went wrong...\nExiting application", pnminput);
         return 1;
     }
-    printf("Dimensions: %d x %d; magic -> %2s\n", pnm->width, pnm->height, pnm->magic);
 
     int res_diff = pgm_to_difference(pnm);
     if (res_diff != 0){
         fprintf(stderr, "An error occured while processing %s...\nExiting application", pnminput);
         free(pnm->data);
-        free(pnm->magic);
         free(pnm);
         return 1;
     }
 
     PNMImage *dif = (PNMImage*)malloc(sizeof(PNMImage));
     //dif->magic = pnm->magic;
-    dif->width = pnm->width; dif->height = pnm->height;
+    dif->width = pnm->width; dif->height = dif->height;
     dif->data = (unsigned char*)malloc(pnm->data_size * 1.35);
     //encode
     BitStream b;
@@ -62,13 +50,13 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
 
     fclose(outp);
     free(dif->data);    free(dif);
-    free(pnm->magic);   free(pnm->data);    free(pnm);
+    free(pnm->data);    free(pnm);
     
     return 0;
 }
 
 
-extern int diftopnm(const char* difinput, const char* pnmoutput){
+/*extern int diftopnm(const char* difinput, const char* pnmoutput){
     FILE *dif = fopen(difinput, "rb");
     if (dif == NULL){
         fprintf(stderr,"Error: cannot open file %s\n",difinput);
@@ -84,7 +72,7 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
     }
     unsigned short width, height;
     fread(&width, 2, 1, dif); fread(&height, 2, 1, dif);
-    printf("Width: %d, Height: %d\n", width, height);
+    printf("Width: %d, Height: %d", width, height);
     //reading & configuring encoding
     fread(&magic,1,1,dif); //skipping q = 4
     unsigned char bitlens[] = {0,0,0,0};
@@ -109,11 +97,11 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
     }
     fclose(dif);
     BitStream b;
-    b.ptr = &(buf[1]); b.off = 0; b.cap = 8;
+    b.ptr = &(buf[1]); b.off = 0;
 
     //final pnm image
     PNMImage pnm; pnm.width = width; pnm.height = height; pnm.magic = "P5";
-    pnm.data = (unsigned char*)malloc(width*height/**layers*/);
+    pnm.data = (unsigned char*)malloc(width*height);
     pnm.data[0] = buf[0];
     for(size_t i = 1; i < width * height; i++){
         pnm.data[i] = decode(&b);
@@ -126,49 +114,4 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
     free(buf);
     free(pnm.data);
     return 0;
-}
-
-void test_differential(){
-    PNMImage *img = read_pnm(".\\tests\\boat.pgm");
-    printf("Dimensions: %d %d\nMagic number: %s\n", img->width, img->height, img->magic);
-    pgm_to_difference(img);
-    write_pnm_image("boat_trace.pgm", img);
-    differential_to_pnm(img);
-    write_pnm_image("boat_decode.pgm", img);
-    free(img);
-}
-
-void test_byte_encode(){
-    unsigned char bitlens[] = {2, 4, 5, 8};
-    bit_lens(bitlens);
-    unsigned char buff[] = {0, 0, 0, 0};
-
-    BitStream b;
-    b.ptr = buff;
-    b.cap = 8;
-    b.off = 0;
-
-    encode(3, &b);
-    encode(6, &b);
-    encode(45, &b);
-    encode(124, &b);
-
-    for(size_t i = 0; i < sizeof(buff); i++)
-        writeBits(buff[i]);
-    printf("\nNow trying to decode them:\n");
-    b.ptr = buff; b.off = 0; b.cap = 8;
-    for(size_t i = 0; i < sizeof(buff); i++)
-        printf("\n%d\n", decode(&b));
-    printf("\n");
-}
-
-int main(void){
-    //printf("Encode: \n");
-    //pnmtodif("./tests/boat.pgm", "./boat.dif");
-
-    printf("\nDecode: \n");
-    diftopnm("./boat.dif", "./boat.pgm");
-    //test_byte_encode();
-    //encode_decode_test();
-    return 0;
-}
+}*/

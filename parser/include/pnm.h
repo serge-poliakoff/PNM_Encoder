@@ -3,7 +3,7 @@
     #include <stdlib.h>
 
     typedef struct {
-        char magic[3];   // "P1" to "P6", null-terminated
+        char *magic;   // "P1" to "P6", null-terminated
         int width;
         int height;
         unsigned char *data;

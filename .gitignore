@@ -1,2 +1,6 @@
 tests/
 .vscode/
+
+*.o
+*.dll
+bin/

@@ -16,6 +16,7 @@ PNMImage* read_pnm(const char *filename) {
     }
 
     // Read magic number
+    img->magic = (char*)malloc(3);
     if (fscanf(fp, "%2s", img->magic) != 1) {
         fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading magic number failed");
         free(img);
@@ -35,7 +36,7 @@ PNMImage* read_pnm(const char *filename) {
     ungetc(c, fp);
     
     if (fscanf(fp, "%d %d", &(img->width), &(img->height)) != 2) {
-        fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading magic number failed");
+        fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading dimensions number failed");
         free(img);
         fclose(fp);
         return NULL;

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-//#include <bits.h>
+#include <assert.h>
+
 #include "../include/bits.h"
 
 unsigned char extraireBit(unsigned char src, int n){
@@ -23,6 +24,8 @@ void writeBits(unsigned char src){
 }
 
 int readbits(BitStream* src, size_t n){
+    assert(src != NULL);
+
     int res = 0;
     for (size_t i = 0; i < n; i ++){
         res += extraireBit(*src->ptr, src->off) << i;
@@ -37,6 +40,8 @@ int readbits(BitStream* src, size_t n){
 }
 
 void pushbits(unsigned char src, size_t nbit, BitStream* dst){
+    assert(dst != NULL);
+    
     int i = 0;
     while(dst->cap > 0){
         *dst->ptr = setBit(*dst->ptr, 8 - dst->cap, extraireBit(src, i));

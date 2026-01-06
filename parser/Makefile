@@ -22,7 +22,7 @@ endif
 #-- rep. sources
 SRC = src/
 
-OBJ = bits.o codage.o differential.o pnm.o
+OBJ = bits.o codage.o differential.o pnm.o dif.o
 OBJS = $(patsubst %,bin/%,$(OBJ))
 
 lib: $(OBJS)

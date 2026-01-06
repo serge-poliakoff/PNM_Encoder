@@ -1,31 +1,116 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+
 #include "../include/codage.h"
 
 #include "../include/bits.h"
 
-extern int encode(unsigned char num, BitStream *dst){
-    if (num < 2){
-        pushbits(0, 3, dst);
-        pushbits(num, 1, dst);
-        return 4;
-    }
-    
-    unsigned char e = 1;
-    while ((1 << e) < num) e++;
-    e--;
-    //printf("for num %d exp2 is computed to be %d\n", num,e);
+int num_inters = 4;
+//unsigned char intervals[] = {0, 4, 20, 52, 255};
+//unsigned char lengths_exp[] = {2, 4, 5, 8};  //length in bytes of number encoded in corresponding interval
+static void print_setts();
+extern unsigned char* bit_lens(unsigned char* bitlens);
+static unsigned char* intervals();
 
-    unsigned char r = num - (1 << e);
-    pushbits(e, 3, dst);
-    pushbits(r, e, dst);
-    return 3 + e;
+static void clean_up(){
+    print_setts();
+    free(bit_lens(NULL));
+    free(intervals());
+}
+
+static void print_setts(){
+    printf("Parameters of encoding calculated as:\nLengths: ");
+    for(int i = 0; i < 4; i++)
+        printf("%d\t", bit_lens(NULL)[i]);
+    printf("\nIntervals: ");
+    for(int i = 0; i < 5; i++)
+        printf("%d - ", intervals(NULL)[i]);
+}
+
+extern unsigned char* bit_lens(unsigned char* bitlens){
+    static unsigned char* length = NULL;
+    if (length == NULL){
+        assert(bitlens != NULL);
+
+        length = (unsigned char*)malloc(4);
+        assert(length != NULL);
+
+        for(int i = 0; i < 4; i++) length[i] = bitlens[i];
+
+        assert(atexit(clean_up) == 0);
+    }
+    return length;
+}
+
+static unsigned char* intervals(){
+    static unsigned char* ints = NULL;
+    if (ints == NULL){
+        unsigned char* lengths = bit_lens(NULL);
+        assert(lengths != NULL);
+
+        ints = (unsigned char*)malloc(5);
+        assert(ints != NULL);
+
+        ints[0] = 0;
+        for(int i = 1; i < 4; i++)
+            ints[i] = ints[i - 1] + (1 << lengths[i - 1]);
+        ints[4] = 255;
+    }
+    return ints;
+}
+
+/*typedef struct{
+    unsigned char value;
+    size_t len;
+} byte_value;*/
+
+extern byte_value interval_code(int start_index){
+    byte_value res;
+    if (intervals()[start_index + 1] == 255){
+        res.value = (1 << (num_inters - 1)) - 1;
+        res.len = num_inters - 1;
+        return res;
+    }
+    res.value = 0;
+    res.len = 1;
+    while (start_index > 0)
+    {
+        res.value += 1 << (start_index - 1);
+        res.len ++;
+        start_index --;
+    }
+    return res;
+}
+
+extern int encode(unsigned char num, BitStream *dst){
+    //find corresponding interval
+    unsigned char e = 1;
+    while ((intervals()[e]) < num) e++;
+    e--;
+    /*printf("number %d is computed to be in inteval %d to %d\n", num,
+        intervals()[e], intervals()[e + 1]);*/
+    
+    byte_value inter_code = interval_code(e);
+    unsigned char r = num - intervals()[e];
+
+    pushbits(inter_code.value, inter_code.len, dst);
+    pushbits(r, bit_lens(NULL)[e], dst);
+
+    int total_length = bit_lens(NULL)[e] + inter_code.len;
+    return total_length;
 }
 
 extern unsigned char decode(BitStream *src){
-    unsigned char e = readbits(src, 3);
-    if (e == 0){
-        return readbits(src, 1);
+    int interval_ind = 0;
+    unsigned char e = readbits(src, 1);
+    while (e != 0 && ++interval_ind < (num_inters - 1))
+    {
+        e = readbits(src, 1);
+        //interval_ind ++;
     }
+    //printf("Number found in interval %d to %d", intervals()[interval_ind], intervals()[interval_ind + 1]);
     
-    unsigned char r = readbits(src, e);
-    return r + (1 << e);
+    unsigned char r = readbits(src, bit_lens(NULL)[interval_ind]);
+    return intervals()[interval_ind] + r;
 }
