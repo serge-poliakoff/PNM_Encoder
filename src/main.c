@@ -43,14 +43,16 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
     dif->data = (unsigned char*)malloc(pnm->data_size * 1.35);
     //encode
     BitStream b;
-    b.ptr = &(dif->data[1]); b.cap = 8;
+    b.ptr = &(dif->data[1]); b.cap = 8; b.off = 0;
     bit_lens(standart_bitlen);
+    dif->data_size = 0;
     for(size_t i = 1; i < pnm->data_size; i++){
         dif->data_size += encode(pnm->data[i], &b);
     }
     dif->data_size /= 8;
     dif->data[0] = pnm->data[0]; //first pixel without any changes
     dif->data_size += 2; // (one for first byte and second for flooring it to lines higher)
+    printf("Size of data encoded in bytes: %d", dif->data_size);
 
     FILE *outp = fopen(difoutput, "wb");
     fwrite(&magic_grayscale, 2, 1, outp); //magic number 0xD3FF in case of rgb
@@ -163,8 +165,8 @@ void test_byte_encode(){
 }
 
 int main(void){
-    //printf("Encode: \n");
-    //pnmtodif("./tests/boat.pgm", "./boat.dif");
+    printf("Encode: \n");
+    pnmtodif("./tests/boat.pgm", "./boat.dif");
 
     printf("\nDecode: \n");
     diftopnm("./boat.dif", "./boat.pgm");

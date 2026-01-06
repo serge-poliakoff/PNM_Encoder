@@ -4,3 +4,8 @@ tests/
 *.o
 *.dll
 bin/
+
+*.pgm
+*.ppm
+*.pnm
+*.dif
