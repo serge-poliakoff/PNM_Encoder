@@ -12,22 +12,19 @@ typedef struct{
 } byte_value;
 
 int num_inters = 4;
-//unsigned char intervals[] = {0, 4, 20, 52, 255};
-//unsigned char lengths_exp[] = {2, 4, 5, 8};  //length in bytes of number encoded in corresponding interval
+
 static void clean_up();
 
 
 extern unsigned char* bit_lens(unsigned char* bitlens){
-    static unsigned char* length = NULL;
-    if (length == NULL){
+    static unsigned char length[4], initialized = 0;
+    if (initialized == 0){
         assert(bitlens != NULL);
-
-        length = (unsigned char*)malloc(4);
-        assert(length != NULL);
 
         for(int i = 0; i < 4; i++) length[i] = bitlens[i];
 
         assert(atexit(clean_up) == 0);
+        initialized = 1;
     }
     return length;
 }
@@ -65,7 +62,7 @@ static void print_setts(){
 
 static void clean_up(){
     print_setts();
-    free(bit_lens(NULL));
+    //free(bit_lens(NULL));
     //free(intervals());
 }
 

@@ -16,29 +16,33 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
         fprintf(stderr, "Opening %s went wrong...\nExiting application", pnminput);
         return 1;
     }
+    printf("Dimensions: %d x %d; magic -> %2s\n", pnm->width, pnm->height, pnm->magic);
 
     int res_diff = pgm_to_difference(pnm);
     if (res_diff != 0){
         fprintf(stderr, "An error occured while processing %s...\nExiting application", pnminput);
         free(pnm->data);
+        free(pnm->magic);
         free(pnm);
         return 1;
     }
 
     PNMImage *dif = (PNMImage*)malloc(sizeof(PNMImage));
     //dif->magic = pnm->magic;
-    dif->width = pnm->width; dif->height = dif->height;
+    dif->width = pnm->width; dif->height = pnm->height;
     dif->data = (unsigned char*)malloc(pnm->data_size * 1.35);
     //encode
     BitStream b;
-    b.ptr = &(dif->data[1]); b.cap = 8;
+    b.ptr = &(dif->data[1]); b.cap = 8; b.off = 0;
     bit_lens(standart_bitlen);
+    dif->data_size = 0;
     for(size_t i = 1; i < pnm->data_size; i++){
         dif->data_size += encode(pnm->data[i], &b);
     }
     dif->data_size /= 8;
     dif->data[0] = pnm->data[0]; //first pixel without any changes
     dif->data_size += 2; // (one for first byte and second for flooring it to lines higher)
+    printf("Size of data encoded in bytes: %d", dif->data_size);
 
     FILE *outp = fopen(difoutput, "wb");
     fwrite(&magic_grayscale, 2, 1, outp); //magic number 0xD3FF in case of rgb
@@ -50,13 +54,13 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
 
     fclose(outp);
     free(dif->data);    free(dif);
-    free(pnm->data);    free(pnm);
+    free(pnm->magic);   free(pnm->data);    free(pnm);
     
     return 0;
 }
 
 
-/*extern int diftopnm(const char* difinput, const char* pnmoutput){
+extern int diftopnm(const char* difinput, const char* pnmoutput){
     FILE *dif = fopen(difinput, "rb");
     if (dif == NULL){
         fprintf(stderr,"Error: cannot open file %s\n",difinput);
@@ -72,7 +76,7 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
     }
     unsigned short width, height;
     fread(&width, 2, 1, dif); fread(&height, 2, 1, dif);
-    printf("Width: %d, Height: %d", width, height);
+    printf("Width: %d, Height: %d\n", width, height);
     //reading & configuring encoding
     fread(&magic,1,1,dif); //skipping q = 4
     unsigned char bitlens[] = {0,0,0,0};
@@ -97,11 +101,11 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
     }
     fclose(dif);
     BitStream b;
-    b.ptr = &(buf[1]); b.off = 0;
+    b.ptr = &(buf[1]); b.off = 0; b.cap = 8;
 
     //final pnm image
     PNMImage pnm; pnm.width = width; pnm.height = height; pnm.magic = "P5";
-    pnm.data = (unsigned char*)malloc(width*height);
+    pnm.data = (unsigned char*)malloc(width*height/**layers*/);
     pnm.data[0] = buf[0];
     for(size_t i = 1; i < width * height; i++){
         pnm.data[i] = decode(&b);
@@ -114,4 +118,4 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
     free(buf);
     free(pnm.data);
     return 0;
-}*/
+}
