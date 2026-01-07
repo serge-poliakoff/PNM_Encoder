@@ -142,35 +142,40 @@ void test_differential(){
 
 void test_byte_encode(){
     unsigned char bitlens[] = {2, 4, 5, 8};
-    bit_lens(bitlens);
-    unsigned char buff[] = {0, 0, 0, 0};
+    bit_lens(standart_bitlen);
 
+    unsigned char *buff = (unsigned char*)malloc(400);
+    assert(buff != NULL);
+    
     BitStream b;
     b.ptr = buff;
     b.cap = 8;
     b.off = 0;
 
-    encode(3, &b);
-    encode(6, &b);
-    encode(45, &b);
-    encode(124, &b);
-
-    for(size_t i = 0; i < sizeof(buff); i++)
-        writeBits(buff[i]);
-    printf("\nNow trying to decode them:\n");
+    for(unsigned char i = 0; i < 255; i++){
+        encode(i, &b);
+        //printf("%d encoded at %p - ", i, b.ptr);
+    }
+    
     b.ptr = buff; b.off = 0; b.cap = 8;
-    for(size_t i = 0; i < sizeof(buff); i++)
-        printf("\n%d\n", decode(&b));
+    for(unsigned char i = 0; i < 255; i++)
+        printf("\n%d", decode(&b));
     printf("\n");
+    free(buff);
 }
 
-int main(void){
+void end_to_end_pgm_test(){
     printf("Encode: \n");
     pnmtodif("./tests/boat.pgm", "./boat.dif");
 
     printf("\nDecode: \n");
     diftopnm("./boat.dif", "./boat.pgm");
+}
+
+int main(void){
+    end_to_end_pgm_test();
     //test_byte_encode();
+    //test_differential();
     //encode_decode_test();
     return 0;
 }

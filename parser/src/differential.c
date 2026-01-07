@@ -48,7 +48,7 @@ extern int differential_to_pnm(PNMImage* img){
         int x = decode_dif(y);
         if ((img->data[i-1] + x) > 255){
             img->data[i] = 255;
-            printf("Difference value overflow: %d\n", x);
+            //printf("Warning: difference value overflow: %d\n", x);
         }else
             img->data[i] = img->data[i-1] + x;
     }

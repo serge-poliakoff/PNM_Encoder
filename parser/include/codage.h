@@ -3,14 +3,9 @@
 
 #include <bits.h>
 
-typedef struct{
-    unsigned char value;
-    size_t len;
-} byte_value;
+
 
 unsigned char* bit_lens(unsigned char* bitlens);
-
-byte_value interval_code(int start_index);
 
 int encode(unsigned char num, BitStream *dst);
 

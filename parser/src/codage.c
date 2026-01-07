@@ -6,27 +6,16 @@
 
 #include "../include/bits.h"
 
+typedef struct{
+    unsigned char value;
+    size_t len;
+} byte_value;
+
 int num_inters = 4;
 //unsigned char intervals[] = {0, 4, 20, 52, 255};
 //unsigned char lengths_exp[] = {2, 4, 5, 8};  //length in bytes of number encoded in corresponding interval
-static void print_setts();
-extern unsigned char* bit_lens(unsigned char* bitlens);
-static unsigned char* intervals();
+static void clean_up();
 
-static void clean_up(){
-    print_setts();
-    free(bit_lens(NULL));
-    free(intervals());
-}
-
-static void print_setts(){
-    printf("Parameters of encoding calculated as:\nLengths: ");
-    for(int i = 0; i < 4; i++)
-        printf("%d\t", bit_lens(NULL)[i]);
-    printf("\nIntervals: ");
-    for(int i = 0; i < 5; i++)
-        printf("%d - ", intervals(NULL)[i]);
-}
 
 extern unsigned char* bit_lens(unsigned char* bitlens){
     static unsigned char* length = NULL;
@@ -44,20 +33,40 @@ extern unsigned char* bit_lens(unsigned char* bitlens){
 }
 
 static unsigned char* intervals(){
-    static unsigned char* ints = NULL;
-    if (ints == NULL){
+    static unsigned char ints[5], initialised = 0;
+    if (initialised == 0){
         unsigned char* lengths = bit_lens(NULL);
         assert(lengths != NULL);
-
-        ints = (unsigned char*)malloc(5);
-        assert(ints != NULL);
+        printf("Setting up intervals for encode/decode process\nLength:\n");
+        for(int i = 0; i < 4; i++)
+            printf("%d\t", lengths[i]);
 
         ints[0] = 0;
-        for(int i = 1; i < 4; i++)
+        printf("\nIntervals: %d\t", ints[0]);
+        for(int i = 1; i < 4; i++){
             ints[i] = ints[i - 1] + (1 << lengths[i - 1]);
+            printf("%d\t", ints[i]);
+        }
         ints[4] = 255;
+        printf("%d\n", ints[4]);
+        initialised = 1;
     }
     return ints;
+}
+
+static void print_setts(){
+    printf("Parameters of encoding calculated as:\nLengths: ");
+    for(int i = 0; i < 4; i++)
+        printf("%d\t", bit_lens(NULL)[i]);
+    printf("\nIntervals: ");
+    for(int i = 0; i < 5; i++)
+        printf("%d - ", intervals()[i]);
+}
+
+static void clean_up(){
+    print_setts();
+    free(bit_lens(NULL));
+    //free(intervals());
 }
 
 /*typedef struct{
@@ -86,9 +95,9 @@ extern byte_value interval_code(int start_index){
 extern int encode(unsigned char num, BitStream *dst){
     //find corresponding interval
     unsigned char e = 1;
-    while ((intervals()[e]) < num) e++;
+    while ((intervals()[e] <= num) && (e < num_inters)) e++;
     e--;
-    /*printf("number %d is computed to be in inteval %d to %d\n", num,
+    /*printf("number %d is computed to be in inteval (%d)%d to %d\n", num, e,
         intervals()[e], intervals()[e + 1]);*/
     
     byte_value inter_code = interval_code(e);
@@ -107,7 +116,6 @@ extern unsigned char decode(BitStream *src){
     while (e != 0 && ++interval_ind < (num_inters - 1))
     {
         e = readbits(src, 1);
-        //interval_ind ++;
     }
     //printf("Number found in interval %d to %d", intervals()[interval_ind], intervals()[interval_ind + 1]);
     
