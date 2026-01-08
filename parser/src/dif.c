@@ -16,19 +16,18 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
         fprintf(stderr, "Opening %s went wrong...\nExiting application", pnminput);
         return 1;
     }
-    printf("Dimensions: %d x %d; magic -> %2s\n", pnm->width, pnm->height, pnm->magic);
+    printf("Dimensions: %d x %d; magic -> P%d\n", pnm->width, pnm->height, pnm->magic);
 
     int res_diff = pgm_to_difference(pnm);
     if (res_diff != 0){
         fprintf(stderr, "An error occured while processing %s...\nExiting application", pnminput);
-        free(pnm->data);
-        free(pnm->magic);
-        free(pnm);
+        free(pnm->data); free(pnm);
         return 1;
     }
 
+    //why bother with another PNMImage ??
     PNMImage *dif = (PNMImage*)malloc(sizeof(PNMImage));
-    //dif->magic = pnm->magic;
+    dif->magic = pnm->magic;
     dif->width = pnm->width; dif->height = pnm->height;
     dif->data = (unsigned char*)malloc(pnm->data_size * 1.35);
     //encode
@@ -54,7 +53,7 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
 
     fclose(outp);
     free(dif->data);    free(dif);
-    free(pnm->magic);   free(pnm->data);    free(pnm);
+    free(pnm->data);    free(pnm);
     
     return 0;
 }
@@ -77,6 +76,7 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
     unsigned short width, height;
     fread(&width, 2, 1, dif); fread(&height, 2, 1, dif);
     printf("Width: %d, Height: %d\n", width, height);
+
     //reading & configuring encoding
     fread(&magic,1,1,dif); //skipping q = 4
     unsigned char bitlens[] = {0,0,0,0};
@@ -104,7 +104,7 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
     b.ptr = &(buf[1]); b.off = 0; b.cap = 8;
 
     //final pnm image
-    PNMImage pnm; pnm.width = width; pnm.height = height; pnm.magic = "P5";
+    PNMImage pnm; pnm.width = width; pnm.height = height; pnm.magic = 5;
     pnm.data = (unsigned char*)malloc(width*height/**layers*/);
     pnm.data[0] = buf[0];
     for(size_t i = 1; i < width * height; i++){

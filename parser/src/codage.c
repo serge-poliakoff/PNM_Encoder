@@ -66,11 +66,6 @@ static void clean_up(){
     //free(intervals());
 }
 
-/*typedef struct{
-    unsigned char value;
-    size_t len;
-} byte_value;*/
-
 extern byte_value interval_code(int start_index){
     byte_value res;
     if (intervals()[start_index + 1] == 255){

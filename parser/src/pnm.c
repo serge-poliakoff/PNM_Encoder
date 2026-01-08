@@ -5,27 +5,30 @@
 
 #include <pnm.h>
 
-PNMImage* read_pnm(const char *filename) {
+extern PNMImage* read_pnm(const char *filename) {
     FILE *fp = fopen(filename, "rb");
-    assert(fp != NULL);
+    if (fp == NULL){
+        fprintf(stderr, "Error opening file %s:\nFile does not exist", filename);
+        return NULL;
+    }
 
     PNMImage *img = malloc(sizeof(PNMImage));
-    if (!img) {
-        fclose(fp);
-        return NULL;
-    }
+    assert(img != NULL);
 
-    // Read magic number
-    img->magic = (char*)malloc(3);
-    if (fscanf(fp, "%2s", img->magic) != 1) {
+    // read magic number
+    if (fscanf(fp, "P%d", &(img->magic)) != 1) {
         fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading magic number failed");
-        free(img);
-        fclose(fp);
+        free(img); fclose(fp);
         return NULL;
     }
-    img->magic[2] = '\0';
+    // working only on binary data
+    if (img->magic < 5 || img->magic > 6){
+        fprintf(stderr, "This programm work only with binary grayscale/rgb pnm images\n");
+        free(img); fclose(fp);
+        return NULL;
+    }
 
-    // Skip comments and read width/height
+    // skip comments and read width/height
     int c;
     do { c = fgetc(fp); } while (c == '\n' || c == '\r' || c == ' ' || c == '\t');
     ungetc(c, fp);
@@ -37,59 +40,43 @@ PNMImage* read_pnm(const char *filename) {
     
     if (fscanf(fp, "%d %d", &(img->width), &(img->height)) != 2) {
         fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading dimensions number failed");
-        free(img);
-        fclose(fp);
+        free(img); fclose(fp);
         return NULL;
     }
 
-    // For P5/P6, skip maxval
-    if (strcmp(img->magic, "P5") == 0 || strcmp(img->magic, "P6") == 0) {
-        int maxval;
-        if (fscanf(fp, "%d", &maxval) != 1) { free(img); fclose(fp); return NULL; }
-        // Skip single whitespace after maxval
-        fgetc(fp);
-    } else {
-        // Skip single whitespace after header
-        fgetc(fp);
-    }
+    // skipping maxvalue as it can't mentioned in .dif format by its specification
+    int maxval;
+    if (fscanf(fp, "%d", &maxval) != 1) { 
+        fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading maximum value failed");
+        free(img); fclose(fp);
+        return NULL;
+     }
+    fgetc(fp);
 
     // Calculate data size
-    size_t size = 0;
-    if (strcmp(img->magic, "P1") == 0 || strcmp(img->magic, "P2") == 0 || strcmp(img->magic, "P3") == 0) {
-        // ASCII formats: not supported for binary read
-        free(img); fclose(fp); return NULL;
-    } else if (strcmp(img->magic, "P4") == 0) {
-        // Bitmap (binary): 1 bit per pixel, padded to full bytes per row
-        size = ((img->width + 7) / 8) * img->height;
-    } else if (strcmp(img->magic, "P5") == 0) {
-        // Grayscale (binary): 1 byte per pixel
-        size = img->width * img->height;
-    } else if (strcmp(img->magic, "P6") == 0) {
-        // RGB (binary): 3 bytes per pixel
-        size = img->width * img->height * 3;
-    } else {
-        free(img); fclose(fp); return NULL;
-    }
+    size_t size = img->width * img->height * 
+        (img->magic == 5 ? 1 : 3);
 
     img->data = malloc(size);
-    if (!img->data) { free(img); fclose(fp); return NULL; }
+    assert(img->data != NULL);
+
     img->data_size = size;
-
-
-    
     if (fread(img->data, 1, size, fp) != size) {
-        free(img->data); free(img); fclose(fp); return NULL;
+        free(img->data); free(img); fclose(fp);
+        return NULL;
     }
     
     fclose(fp);
     return img;
 }
 
-void write_pnm_image(const char* filename, PNMImage* img){
+
+//todo: make int return error code
+extern void write_pnm_image(const char* filename, PNMImage* img){
     FILE *fp = fopen(filename, "wb");
     assert(fp != NULL);
 
-    fprintf(fp, "%s\n", img->magic);
+    fprintf(fp, "P%d\n", img->magic);
     fprintf(fp,"%d %d %d\n", img->width, img->height, 255);
     fwrite(img->data, 1, img->data_size, fp);
     

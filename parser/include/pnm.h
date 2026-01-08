@@ -3,7 +3,8 @@
     #include <stdlib.h>
 
     typedef struct {
-        char *magic;   // "P1" to "P6", null-terminated
+        // 5 or 6, for grayscale and rgb respectfully
+        char magic;
         int width;
         int height;
         unsigned char *data;

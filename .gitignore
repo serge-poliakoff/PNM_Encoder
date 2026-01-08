@@ -3,6 +3,7 @@ tests/
 
 **.o
 **.dll
+**.exe
 bin/
 
 *.pgm
