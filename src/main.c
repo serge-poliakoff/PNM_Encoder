@@ -12,11 +12,21 @@
 
 void test_differential(){
     PNMImage *img = read_pnm(".\\tests\\boat.pgm");
-    printf("Dimensions: %d %d\nMagic number: %s\n", img->width, img->height, img->magic);
-    pgm_to_difference(img);
+    printf("Dimensions: %d %d\nMagic number: P%d\n", img->width, img->height, img->magic);
+    pnm_to_differential(img);
     write_pnm_image("boat_trace.pgm", img);
     differential_to_pnm(img);
     write_pnm_image("boat_decode.pgm", img);
+    free(img);
+}
+
+void test_differential_rgb(){
+    PNMImage *img = read_pnm(".\\tests\\gaspard.ppm");
+    printf("Dimensions: %d %d\nMagic number: P%d\n", img->width, img->height, img->magic);
+    pnm_to_differential(img);
+    write_pnm_image("gaspard_trace.pgm", img);
+    differential_to_pnm(img);
+    write_pnm_image("gaspard_decode.pgm", img);
     free(img);
 }
 
@@ -44,7 +54,7 @@ void test_byte_encode(){
     free(buff);
 }
 
-void end_to_end_pgm_test(){
+void end_to_end_pgm_test_gray(){
     printf("Encode: \n");
     pnmtodif("./tests/boat.pgm", "./boat.dif");
 
@@ -52,10 +62,19 @@ void end_to_end_pgm_test(){
     diftopnm("./boat.dif", "./boat.pgm");
 }
 
+void end_to_end_pgm_test_rgb(){
+    printf("Encode: \n");
+    pnmtodif("./tests/gaspard.ppm", "./gaspard.dif");
+
+    printf("\nDecode: \n");
+    diftopnm("./gaspard.dif", "./gaspard.pgm");
+}
+
 int main(void){
-    end_to_end_pgm_test();
+    end_to_end_pgm_test_rgb();
     //test_byte_encode();
     //test_differential();
+    //test_differential_rgb();
     //encode_decode_test();
     return 0;
 }

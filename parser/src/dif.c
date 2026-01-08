@@ -9,6 +9,9 @@
 
 unsigned char standart_bitlen[] = {2, 4, 5, 8};
 unsigned short magic_grayscale = 0xD1FF;
+unsigned short magic_rgb = 0xD3FF;
+
+//to do: standartize error gestion
 
 extern int pnmtodif(const char* pnminput, const char* difoutput){
     PNMImage* pnm = read_pnm(pnminput);
@@ -18,42 +21,40 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
     }
     printf("Dimensions: %d x %d; magic -> P%d\n", pnm->width, pnm->height, pnm->magic);
 
-    int res_diff = pgm_to_difference(pnm);
-    if (res_diff != 0){
-        fprintf(stderr, "An error occured while processing %s...\nExiting application", pnminput);
-        free(pnm->data); free(pnm);
-        return 1;
-    }
-
-    //why bother with another PNMImage ??
-    PNMImage *dif = (PNMImage*)malloc(sizeof(PNMImage));
-    dif->magic = pnm->magic;
-    dif->width = pnm->width; dif->height = pnm->height;
-    dif->data = (unsigned char*)malloc(pnm->data_size * 1.35);
-    //encode
+    pnm_to_differential(pnm);
+    
+    //encode data to buffer
+    unsigned char *dif_data = (unsigned char*)malloc(pnm->data_size * 1.35);
     BitStream b;
-    b.ptr = &(dif->data[1]); b.cap = 8; b.off = 0;
+    b.ptr = &(dif_data[1]); b.cap = 8; b.off = 0;
     bit_lens(standart_bitlen);
-    dif->data_size = 0;
-    for(size_t i = 1; i < pnm->data_size; i++){
-        dif->data_size += encode(pnm->data[i], &b);
+    size_t dif_data_size = 0;
+    size_t first_pixel = pnm->magic == 5 ? 1 : 3;
+    for(size_t i = first_pixel; i < pnm->data_size; i++){
+        dif_data_size += encode(pnm->data[i], &b);
     }
-    dif->data_size /= 8;
-    dif->data[0] = pnm->data[0]; //first pixel without any changes
-    dif->data_size += 2; // (one for first byte and second for flooring it to lines higher)
-    printf("Size of data encoded in bytes: %d", dif->data_size);
+    dif_data_size /= 8; //encode return number of bits encoded
+    //first pixel without any changes
+    dif_data[0] = pnm->data[0];
+    if (pnm->magic == 6){
+        dif_data[1] = pnm->data[1];
+        dif_data[2] = pnm->data[2];
+    }
+    dif_data_size += 2; // (one for first byte and second for flooring it to lines higher)
+    printf("Size of data encoded in bytes: %lld", dif_data_size);
 
     FILE *outp = fopen(difoutput, "wb");
-    fwrite(&magic_grayscale, 2, 1, outp); //magic number 0xD3FF in case of rgb
-    fwrite(&(dif->width), 2, 1, outp); fwrite(&(dif->height), 2, 1, outp);
+    fwrite(pnm->magic==5?&magic_grayscale:&magic_rgb, 2, 1, outp);
+    fwrite(&(pnm->width), 2, 1, outp); fwrite(&(pnm->height), 2, 1, outp);
     unsigned char q = 4;
-    fwrite(&q, 1, 1, outp); //encoding quant'
+    fwrite(&q, 1, 1, outp); //encoding quantificator
     for(int i = 0; i < 4; i++) fwrite(&standart_bitlen[i], 1, 1, outp);
-    fwrite(dif->data, 1, dif->data_size, outp);
+    fwrite(dif_data, 1, dif_data_size, outp);
 
     fclose(outp);
-    free(dif->data);    free(dif);
-    free(pnm->data);    free(pnm);
+    free(dif_data);
+    free(pnm->data); 
+    free(pnm);
     
     return 0;
 }
@@ -68,14 +69,16 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
 
     unsigned short magic;
     fread(&magic, 2, 1, dif);
-    if (magic != magic_grayscale){
+    if (magic != magic_grayscale && magic != magic_rgb){
         fprintf(stderr,"Error processing file %s: unknown magic number\n", difinput);
         fclose(dif);
         return 1;
     }
+    char pnm_magic = magic == magic_grayscale ? 5 : 6;
     unsigned short width, height;
     fread(&width, 2, 1, dif); fread(&height, 2, 1, dif);
-    printf("Width: %d, Height: %d\n", width, height);
+    size_t data_size = width * height * (pnm_magic == 5 ? 1 : 3);
+    printf("Width: %d, Height: %d, Magic: P%d\n", width, height, pnm_magic);
 
     //reading & configuring encoding
     fread(&magic,1,1,dif); //skipping q = 4
@@ -88,8 +91,15 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
     bit_lens(bitlens);
 
     //reading pixels (first & all the rest encoded)
-    unsigned char *buf = (unsigned char*)malloc(width*height*1.35);
+    printf("Reading pixels...\n");
+    unsigned char *buf = (unsigned char*)malloc(data_size*1.35);
+    if (buf == NULL){
+        fclose(dif); printf("Allocation failed\n"); return 1;
+    }
+
+    //have to read pixel by pixel as we don't know the final size of encrypted image
     if (fread(buf, 1, 1, dif) != 1){
+        printf("Error processing file %s: empty body\n", difinput);
         fprintf(stderr,"Error processing file %s: empty body\n", difinput);
         free(buf);
         fclose(dif);
@@ -100,17 +110,29 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
         if (res == 0) break;
     }
     fclose(dif);
+    printf("File processing finished successfully\n");
+
     BitStream b;
-    b.ptr = &(buf[1]); b.off = 0; b.cap = 8;
+    size_t first_pixel = pnm_magic == 5 ? 1 : 3;
+    b.ptr = &(buf[first_pixel]); b.off = 0; b.cap = 8;
 
     //final pnm image
-    PNMImage pnm; pnm.width = width; pnm.height = height; pnm.magic = 5;
-    pnm.data = (unsigned char*)malloc(width*height/**layers*/);
+    PNMImage pnm; pnm.width = width; pnm.height = height; pnm.magic = pnm_magic;
+    pnm.data_size = data_size;
+    pnm.data = (unsigned char*)malloc(pnm.data_size);
+    if (pnm.data == NULL){
+        free(buf);
+        return 1;
+    }
+
     pnm.data[0] = buf[0];
-    for(size_t i = 1; i < width * height; i++){
+    if(pnm.magic == 6){
+        pnm.data[1] = buf[2];
+        pnm.data[1] = buf[2];
+    }
+    for(size_t i = first_pixel; i < pnm.data_size; i++){
         pnm.data[i] = decode(&b);
     }
-    pnm.data_size = width * height;
 
     differential_to_pnm(&pnm);
     write_pnm_image(pnmoutput, &pnm);

@@ -3,8 +3,8 @@
 
     #include <pnm.h>
     
-    int pgm_to_difference(PNMImage* img);
+    void pnm_to_differential(PNMImage* img);
 
-    int differential_to_pnm(PNMImage* img);
+    void differential_to_pnm(PNMImage* img);
 
 #endif
