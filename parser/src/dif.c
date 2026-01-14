@@ -13,21 +13,29 @@ unsigned short magic_rgb = 0xD3FF;
 
 //to do: standartize error gestion
 
-extern int pnmtodif(const char* pnminput, const char* difoutput){
-    printf("Compressing file: %s -> %s...", pnminput, difoutput);
+extern int pnmtodif(const char* pnminput, const char* difoutput, int verbose){
+    printf("\nCompressing file: %s -> %s...\n", pnminput, difoutput);
     PNMImage* pnm = read_pnm(pnminput);
     if (pnm == NULL){
         fprintf(stderr, "Opening %s went wrong...\nExiting application", pnminput);
         return 1;
     }
-    printf("Dimensions: %d x %d; magic -> P%d\n", pnm->width, pnm->height, pnm->magic);
-
+    if(verbose)
+        printf("Dimensions: %d x %d; magic -> P%d\n", pnm->width, pnm->height, pnm->magic);
+    
     pnm_to_differential(pnm);
     
     //encode data to buffer
     unsigned char *dif_data = (unsigned char*)malloc(pnm->data_size * 1.35);
+    if (dif_data == NULL) {
+        fprintf(stderr, "Error: memory allocation failed\n");
+        free(pnm->data);
+        free(pnm);
+        exit(1);
+    }
     BitStream b;
     b.ptr = &(dif_data[1]); b.cap = 8; b.off = 0;
+    codage_verbosity(verbose);
     bit_lens(standart_bitlen);
     size_t dif_data_size = 0;
     size_t first_pixel = pnm->magic == 5 ? 1 : 3;
@@ -42,7 +50,8 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
         dif_data[2] = pnm->data[2];
     }
     dif_data_size += 2; // (one for first byte and second for flooring it to lines higher)
-    printf("Size of data encoded in bytes: %lld", dif_data_size);
+    if(verbose)
+        printf("Size of data encoded in bytes: %lld\n", dif_data_size);
 
     FILE *outp = fopen(difoutput, "wb");
     fwrite(pnm->magic==5?&magic_grayscale:&magic_rgb, 2, 1, outp);
@@ -52,6 +61,8 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
     for(int i = 0; i < 4; i++) fwrite(&standart_bitlen[i], 1, 1, outp);
     fwrite(dif_data, 1, dif_data_size, outp);
 
+    double compression = (double)dif_data_size / (double)(pnm->data_size);
+    printf("Compression tax for %s made up %f%c\n",pnminput, compression * 100, '%');
     fclose(outp);
     free(dif_data);
     free(pnm->data); 
@@ -61,7 +72,7 @@ extern int pnmtodif(const char* pnminput, const char* difoutput){
 }
 
 
-extern int diftopnm(const char* difinput, const char* pnmoutput){
+extern int diftopnm(const char* difinput, const char* pnmoutput, int verbose){
     FILE *dif = fopen(difinput, "rb");
     if (dif == NULL){
         fprintf(stderr,"Error: cannot open file %s\n",difinput);
@@ -79,7 +90,8 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
     unsigned short width, height;
     fread(&width, 2, 1, dif); fread(&height, 2, 1, dif);
     size_t data_size = width * height * (pnm_magic == 5 ? 1 : 3);
-    printf("Width: %d, Height: %d, Magic: P%d\n", width, height, pnm_magic);
+    if(verbose)
+        printf("Width: %d, Height: %d, Magic: P%d\n", width, height, pnm_magic);
 
     //reading & configuring encoding
     fread(&magic,1,1,dif); //skipping q = 4
@@ -89,18 +101,21 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
         fclose(dif);
         return 1;
     }
+    codage_verbosity(verbose);
     bit_lens(bitlens);
 
     //reading pixels (first & all the rest encoded)
-    printf("Reading pixels...\n");
+    if(verbose)
+        printf("Reading pixels...\n");
     unsigned char *buf = (unsigned char*)malloc(data_size*1.35);
     if (buf == NULL){
-        fclose(dif); printf("Allocation failed\n"); return 1;
+        fprintf(stderr, "Error: memory allocation failed\n");
+        fclose(dif);
+        exit(1);
     }
 
     //have to read pixel by pixel as we don't know the final size of encrypted image
     if (fread(buf, 1, 1, dif) != 1){
-        printf("Error processing file %s: empty body\n", difinput);
         fprintf(stderr,"Error processing file %s: empty body\n", difinput);
         free(buf);
         fclose(dif);
@@ -111,7 +126,8 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
         if (res == 0) break;
     }
     fclose(dif);
-    printf("File processing finished successfully\n");
+    if(verbose)
+        printf("Decoding: File processing finished successfully\n");
 
     BitStream b;
     size_t first_pixel = pnm_magic == 5 ? 1 : 3;
@@ -122,8 +138,9 @@ extern int diftopnm(const char* difinput, const char* pnmoutput){
     pnm.data_size = data_size;
     pnm.data = (unsigned char*)malloc(pnm.data_size);
     if (pnm.data == NULL){
+        fprintf(stderr, "Error: memory allocation failed\n");
         free(buf);
-        return 1;
+        exit(1);
     }
 
     pnm.data[0] = buf[0];

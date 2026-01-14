@@ -11,5 +11,6 @@ int encode(unsigned char num, BitStream *dst);
 
 unsigned char decode(BitStream *src);
 
+int codage_verbosity(int v);
 
 #endif

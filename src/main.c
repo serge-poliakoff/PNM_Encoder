@@ -11,6 +11,8 @@ static int compress = 0;
 static int decompress = 0;
 static int help = 0;
 
+static int verbose = 0;
+
 int compress_file(const char* filename){
     if (filename == NULL){
         fprintf(stdout, "Error: empty filename encountered while trying to compress file\n");
@@ -26,7 +28,7 @@ int compress_file(const char* filename){
     }
     sprintf(compressed_name, "%s%s", filename, suffix);
     
-    int result = pnmtodif(filename, compressed_name);
+    int result = pnmtodif(filename, compressed_name, verbose);
     if (result != 0){
         printf("Unfortunately, compressing %s failed. Check stderr to see error logs.\n", filename);
         return 1;
@@ -52,7 +54,7 @@ int decompress_file(const char* filename){
     
     sprintf(compressed_name, "%s%s", filename, suffix);
     
-    int result = diftopnm(filename, compressed_name);
+    int result = diftopnm(filename, compressed_name, verbose);
     if (result != 0){
         printf("Unfortunately, decompressing %s failed. Check stderr to see error logs.\n", filename);
         return 1;
@@ -69,18 +71,16 @@ int main(int argc, char **argv){
     {
       static struct option long_options[] =
         {
-          /* These options set a flag. */
-          {"compress", no_argument, 0, 'c'},
-          {"decompress",   no_argument, 0, 'd'},
-          /* These options don’t set a flag.
-             We distinguish them by their indices. */
-          {"help",     no_argument,       0, 'h'},
+          {"compress", no_argument, &compress, 1},
+          {"decompress",   no_argument, &decompress, 1},
+          {"verbose", no_argument, &verbose, 1},
+          {"help",     no_argument, &help, 1},
           {0, 0, 0, 0}
         };
       /* getopt_long stores the option index here. */
       int option_index = 0;
 
-      c = getopt_long (argc, argv, "cdh",
+      c = getopt_long (argc, argv, "vcdh",
                        long_options, &option_index);
 
       /* Detect the end of the options. */
@@ -98,22 +98,21 @@ int main(int argc, char **argv){
             printf (" with arg %s", optarg);
           printf ("\n");
           break;
-
+        case 'v':
+            verbose = 1;
+            break;
         case 'c':
           compress = 1;
-          //printf("Compressing files option chosen\n");
           c = -1;
           break;
 
         case 'd':
           decompress = 1;
-          //printf("Decompressing files option chosen\n");
           c = -1;
           break;
 
         case 'h':
           help = 1;
-          //printf("Help option chosen\n");
           c = -1;
           break;
 
@@ -139,6 +138,12 @@ int main(int argc, char **argv){
     printf("Note that this programm can compress only bynary pnm images in formats of P5 and P6\n");
     return 0;
   } 
+
+  if (decompress == compress){
+    printf("Specify an action argument: --compress or --decompress\n");
+    printf("Run programm with argument --help to see full usage instructions\n");
+    return 1;
+  }
 
   //at this point we are sure that our job is compressing/decompressing images
   if (optind < argc)

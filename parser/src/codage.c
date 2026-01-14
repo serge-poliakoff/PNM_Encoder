@@ -13,8 +13,15 @@ typedef struct{
 
 int num_inters = 4;
 
-static void clean_up();
+extern int codage_verbosity(int v){
+    static int verbose, initialized = 0;
+    if (!initialized){
+        verbose = v;
+        initialized = 1;
+    }
 
+    return verbose;
+}
 
 extern unsigned char* bit_lens(unsigned char* bitlens){
     static unsigned char length[4], initialized = 0;
@@ -23,7 +30,6 @@ extern unsigned char* bit_lens(unsigned char* bitlens){
 
         for(int i = 0; i < 4; i++) length[i] = bitlens[i];
 
-        assert(atexit(clean_up) == 0);
         initialized = 1;
     }
     return length;
@@ -33,19 +39,26 @@ static unsigned char* intervals(){
     static unsigned char ints[5], initialised = 0;
     if (initialised == 0){
         unsigned char* lengths = bit_lens(NULL);
-        assert(lengths != NULL);
-        printf("Setting up intervals for encode/decode process\nLength:\n");
-        for(int i = 0; i < 4; i++)
-            printf("%d\t", lengths[i]);
-
+        if (lengths == NULL){
+            fprintf(stderr, "Error: internal encoding algorithmes error");
+            exit(1);
+        }
+        if (codage_verbosity(0)){
+            printf("Setting up intervals for encode/decode process\nLength:\n");
+            for(int i = 0; i < 4; i++)
+                printf("%d\t", lengths[i]);
+        }
         ints[0] = 0;
-        printf("\nIntervals: %d\t", ints[0]);
+        if (codage_verbosity(0))
+            printf("\nIntervals: %d\t", ints[0]);
         for(int i = 1; i < 4; i++){
             ints[i] = ints[i - 1] + (1 << lengths[i - 1]);
-            printf("%d\t", ints[i]);
+            if (codage_verbosity(0))
+                printf("%d\t", ints[i]);
         }
         ints[4] = 255;
-        printf("%d\n", ints[4]);
+        if (codage_verbosity(0))
+            printf("%d\n", ints[4]);
         initialised = 1;
     }
     return ints;
@@ -58,12 +71,6 @@ static void print_setts(){
     printf("\nIntervals: ");
     for(int i = 0; i < 5; i++)
         printf("%d - ", intervals()[i]);
-}
-
-static void clean_up(){
-    print_setts();
-    //free(bit_lens(NULL));
-    //free(intervals());
 }
 
 extern byte_value interval_code(int start_index){

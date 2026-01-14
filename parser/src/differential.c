@@ -50,7 +50,7 @@ static void differential_to_rgb(unsigned char *data, size_t data_size){
         int x = decode_dif(y);
         if ((data[i-3] + x) > 255){
             data[i] = 255;
-            printf("Warning: difference value overflow: %d\n", x);
+            //printf("Warning: difference value overflow: %d\n", x);
         }else
             data[i] = data[i-3] + x;
     }
@@ -62,7 +62,7 @@ static void differential_to_grayscale(unsigned char* data, size_t data_size){
         int x = decode_dif(y);
         if ((data[i-1] + x) > 255){
             data[i] = 255;
-            printf("Warning: difference value overflow: %d\n", x);
+            //printf("Warning: difference value overflow: %d\n", x);
         }else{
             data[i] = data[i-1] + x;
         }

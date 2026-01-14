@@ -13,7 +13,10 @@ extern PNMImage* read_pnm(const char *filename) {
     }
 
     PNMImage *img = malloc(sizeof(PNMImage));
-    assert(img != NULL);
+    if (img == NULL) {
+        fprintf(stderr, "Error: memory allocation failed\n");
+        exit(1);
+    }
 
     // read magic number
     if (fscanf(fp, "P%d", &(img->magic)) != 1) {
@@ -58,7 +61,11 @@ extern PNMImage* read_pnm(const char *filename) {
         (img->magic == 5 ? 1 : 3);
 
     img->data = malloc(size);
-    assert(img->data != NULL);
+    if (img->data == NULL) {
+        fprintf(stderr, "Error: memory allocation failed\n");
+        free(img);
+        exit(1);
+    }
 
     img->data_size = size;
     if (fread(img->data, 1, size, fp) != size) {
