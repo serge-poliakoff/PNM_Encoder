@@ -14,6 +14,7 @@ unsigned short magic_rgb = 0xD3FF;
 //to do: standartize error gestion
 
 extern int pnmtodif(const char* pnminput, const char* difoutput){
+    printf("Compressing file: %s -> %s...", pnminput, difoutput);
     PNMImage* pnm = read_pnm(pnminput);
     if (pnm == NULL){
         fprintf(stderr, "Opening %s went wrong...\nExiting application", pnminput);
