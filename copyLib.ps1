@@ -1,2 +1,2 @@
-Remove-Item .\libbinpars.dll
-Copy-Item .\parser\lib\libbinpars.dll .\
+Remove-Item .\libcodec.dll
+Copy-Item .\parser\lib\libcodec.dll .\

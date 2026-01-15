@@ -26,7 +26,7 @@ OBJ = bits.o codage.o differential.o pnm.o dif.o
 OBJS = $(patsubst %,bin/%,$(OBJ))
 
 lib: $(OBJS)
-	$(CC) -shared $^ -o lib/libbinpars.dll
+	$(CC) -shared $^ -o lib/libcodec.dll
 
 main : bin/main.o bin/bits.o bin/codage.o
 	$(CC)  $^ -o $@

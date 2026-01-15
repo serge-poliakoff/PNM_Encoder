@@ -20,7 +20,7 @@ extern PNMImage* read_pnm(const char *filename) {
 
     // read magic number
     if (fscanf(fp, "P%d", &(img->magic)) != 1) {
-        fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading magic number failed");
+        fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading magic number failed\n");
         free(img); fclose(fp);
         return NULL;
     }
@@ -42,7 +42,7 @@ extern PNMImage* read_pnm(const char *filename) {
     ungetc(c, fp);
     
     if (fscanf(fp, "%d %d", &(img->width), &(img->height)) != 2) {
-        fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading dimensions number failed");
+        fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading dimensions number failed\n");
         free(img); fclose(fp);
         return NULL;
     }
@@ -50,7 +50,7 @@ extern PNMImage* read_pnm(const char *filename) {
     // skipping maxvalue as it can't mentioned in .dif format by its specification
     int maxval;
     if (fscanf(fp, "%d", &maxval) != 1) { 
-        fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading maximum value failed");
+        fprintf(stderr, "Image is not of pnm format, or is currupted:\nReading maximum value failed\n");
         free(img); fclose(fp);
         return NULL;
      }
@@ -69,6 +69,7 @@ extern PNMImage* read_pnm(const char *filename) {
 
     img->data_size = size;
     if (fread(img->data, 1, size, fp) != size) {
+        fprintf(stderr, "Error: reading pixels from fail failed.\n");
         free(img->data); free(img); fclose(fp);
         return NULL;
     }

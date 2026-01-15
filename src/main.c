@@ -15,7 +15,7 @@ static int verbose = 0;
 
 int compress_file(const char* filename){
     if (filename == NULL){
-        fprintf(stdout, "Error: empty filename encountered while trying to compress file\n");
+        fprintf(stderr, "Error: empty filename encountered while trying to compress file\n");
         return 1;
     }
     int filename_length = strlen(filename);
@@ -23,7 +23,7 @@ int compress_file(const char* filename){
 
     char *compressed_name = (char*)malloc(filename_length + 4);
     if (compressed_name == NULL){
-        fprintf(stdout, "Error: memory allocation failed\n");
+        fprintf(stderr, "Error: memory allocation failed\n");
         exit(1);
     }
     sprintf(compressed_name, "%s%s", filename, suffix);
@@ -44,7 +44,8 @@ int decompress_file(const char* filename){
         return 1;
     }
     int filename_length = strlen(filename);
-    char suffix[] = ".pnm";
+    // temp solution -> change at prod
+    char suffix[] = ".ppm";
 
     char *compressed_name = (char*)malloc(filename_length + 4);
     if (compressed_name == NULL){

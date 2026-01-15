@@ -57,8 +57,7 @@ static unsigned char* intervals(){
                 printf("%d\t", ints[i]);
         }
         ints[4] = 255;
-        if (codage_verbosity(0))
-            printf("%d\n", ints[4]);
+        
         initialised = 1;
     }
     return ints;

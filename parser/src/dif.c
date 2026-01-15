@@ -7,7 +7,7 @@
 #include <differential.h>
 #include <bits.h>
 
-unsigned char standart_bitlen[] = {2, 4, 5, 8};
+unsigned char standart_bitlen[] = {1, 3, 5, 8};// {2, 4, 5, 8};
 unsigned short magic_grayscale = 0xD1FF;
 unsigned short magic_rgb = 0xD3FF;
 
@@ -17,7 +17,7 @@ extern int pnmtodif(const char* pnminput, const char* difoutput, int verbose){
     printf("\nCompressing file: %s -> %s...\n", pnminput, difoutput);
     PNMImage* pnm = read_pnm(pnminput);
     if (pnm == NULL){
-        fprintf(stderr, "Opening %s went wrong...\nExiting application", pnminput);
+        fprintf(stderr, "Opening %s went wrong...\n", pnminput);
         return 1;
     }
     if(verbose)

@@ -1,6 +1,6 @@
 PATH2LIB = ./parser/lib
 PATHI = ./parser/include
-LIBNAME = binpars
+LIBNAME = codec
 DEBUG = -g
 CFLAGS = -Wall -std=c17
 
