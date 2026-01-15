@@ -134,7 +134,8 @@ int main(int argc, char **argv){
     printf("Usage:\n");
     printf("\t-c (--compress) file [file2 etc.]\tfor compressing pnm images\n");
     printf("\t-d (--decompress) file [file2 etc.]\tfor decompressing pnm images\n");
-    printf("\t-h (--help)\t\t\t\tto get help\n");
+    printf("\t-h (--help)\t\t\t\tto get help with using programm\n");
+    printf("\t-v (--verbose)\t\t\t\tto get more logs\n");
 
     printf("Note that this programm can compress only bynary pnm images in formats of P5 and P6\n");
     return 0;
